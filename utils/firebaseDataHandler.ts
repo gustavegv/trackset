@@ -2,20 +2,27 @@ import workoutData from "./data.json";
 import { db } from "./firebaseConfig";
 import { collection, addDoc, getDocs } from "firebase/firestore";
 
+interface Exercise {
+  name: string;
+  increased: boolean;
+  avgRep: number;
+  sets: Set[];
+
+}
 
 interface Set {
     id: number;
     reps: number;
   }
 
-export async function getNextExercise(num: number): Promise<Set[]> {
+export async function getNextExercise(num: number): Promise<Exercise> {
   try {
     const querySnapshot = await getDocs(collection(db, "exercises"));
     
-    const exercises = querySnapshot.docs.map(doc => doc.data());
+    const exercises = querySnapshot.docs.map(doc => doc.data() as Exercise);
 
     if (exercises[num]) {
-      return exercises[num].sets;
+      return exercises[num];
     } else {
       throw new Error(`Exercise not found for index ${num}`);
     }

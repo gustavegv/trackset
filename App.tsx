@@ -7,6 +7,8 @@ function App(): React.ReactElement {
   const [exerciseData, setExerciseData] = useState<
     { id: number; reps: number; weight?: number }[]
   >([]);
+  const [exName, setExName] = useState("");
+ 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -23,7 +25,8 @@ function App(): React.ReactElement {
     const fetchData = async () => {
       try {
         const data = await getNextExercise(0); 
-        setExerciseData(data);
+        setExerciseData(data.sets);
+        setExName(data.name);
       } catch (err: any) {
         setError(err);
       } finally {
@@ -67,7 +70,7 @@ function App(): React.ReactElement {
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.bigBlue}>Övning</Text>
+        <Text style={styles.bigBlue}>{exName}</Text>
       </View>
       <View>{setBlockComponents}</View>
       <ConfirmSelection onPress={handleSubmit} />

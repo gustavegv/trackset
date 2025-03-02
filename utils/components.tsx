@@ -31,13 +31,15 @@ export const SetBlock = ({
   const [curCount, setCurCount] = useState(repNum);
 
   const handleDecrement = () => {
-    setCurCount((prev) => prev - 1);
-    onCountChange(id, curCount); 
+    const newCount = curCount - 1;
+    setCurCount(newCount);
+    onCountChange(id, newCount); // Notify the parent
   };
 
   const handleIncrement = () => {
-    setCurCount((prev) => prev + 1);
-    onCountChange(id, curCount); 
+    const newCount = curCount + 1;
+    setCurCount(newCount);
+    onCountChange(id, newCount); 
   };
 
 
