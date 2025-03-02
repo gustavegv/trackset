@@ -21,14 +21,10 @@ const Incrementers = ({ text, onPress }: {text: string; onPress: () => void}) =>
 
 export const SetBlock = ({
     id,
-    setNum, 
-    weight, 
     repNum,
     onCountChange,
 }: {
     id: number;
-    setNum: number; 
-    weight: number; 
     repNum: number;
     onCountChange: (id: number, count: number) => void;
 }) => {
@@ -47,7 +43,7 @@ export const SetBlock = ({
 
   return (
     <View style={styles.counterContainer}>
-        <Text style={styles.red}>Set {setNum}</Text>
+        <Text style={styles.red}>Set {id}</Text>
         <View style={styles.counterInnerContainer}>
           <Incrementers text={"-"} onPress={handleDecrement}></Incrementers>
           <Text style={styles.counter}>{curCount}</Text>

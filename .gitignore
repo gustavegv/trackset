@@ -107,3 +107,5 @@ ios/build/
 coverage/
 
 ios/*.xcworkspace/contents.xcworkspacedata
+
+.env

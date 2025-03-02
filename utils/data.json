@@ -1,0 +1,16 @@
+{
+    "push": [
+      {
+        "name": "Bench Press",
+        "weight": 80,
+        "sets": [
+          { "id": 1, "reps": 8 },
+          { "id": 2, "reps": 7 },
+          { "id": 3, "reps": 7 }
+        ],
+        "avgRepCount": 7.5,
+        "increasedWeight": false
+      }
+    ]
+  }
+  

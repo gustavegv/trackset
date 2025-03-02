@@ -3,25 +3,21 @@
  */
 
 import {
-  Alert,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { createSetBlocks } from './utils/renderContent';
+import { ass } from './utils/test';
 import { SetBlock, ConfirmSelection } from './utils/components'
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { jsx } from 'react/jsx-runtime';
+import { getNextExercise }  from './utils/firebaseDataHandler'
 
-const data = [
-  { id: 1, setNum: 1, weight: 1, repNum: 10 },
-  { id: 2, setNum: 2, weight: 0, repNum: 9 },
-  { id: 3, setNum: 3, weight: 0, repNum: 200 },
-  { id: 4, setNum: 4, weight: 0, repNum: 200 },
-
-];
+const data = getNextExercise(0);
 
 function App(): React.ReactElement {
+  let exerciseIndex = 0;
+
   const [blockStates, setBlockStates] = useState<{ [id: number]: number }>({});
 
   const handleCountChange = (id: number, count: number) => {
@@ -35,16 +31,14 @@ function App(): React.ReactElement {
     <SetBlock
       key={block.id}
       id={block.id}
-      setNum={block.setNum}
-      weight={block.weight}
-      repNum={block.repNum}
+      repNum={block.reps}
       onCountChange={handleCountChange}
     />
   ));
 
   const handleSubmit = () => {
     const jsonData = JSON.stringify(blockStates);
-    console.log("shuuuuurda");
+
     console.log("Compiled JSON data:", jsonData);
   };
   
