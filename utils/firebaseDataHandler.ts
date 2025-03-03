@@ -1,13 +1,17 @@
 import workoutData from "./data.json";
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, arrayUnion, doc, orderBy, query, getDoc } from "firebase/firestore";
 
 interface Exercise {
   name: string;
-  increased: boolean;
-  avgRep: number;
   sets: Set[];
+  weight: number;
+  historic: Historic[];
+}
 
+interface Historic {
+    avgSet: number;
+    weightH: number;
 }
 
 interface Set {
@@ -15,7 +19,30 @@ interface Set {
     reps: number;
   }
 
-export async function getNextExercise(num: number): Promise<Exercise> {
+  export async function getNextExercise(num: number): Promise<Exercise> {
+    try {
+      const docRef = doc(db, "exercises", "push");
+      const docSnap = await getDoc(docRef);
+  
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const allMovements = data.exercise as Exercise[];
+  
+        if (allMovements && allMovements[num]) {
+          return allMovements[num];
+        } else {
+          throw new Error(`Exercise not found for index ${num}`);
+        }
+      } else {
+        throw new Error("Document 'push' not found in the 'exercises' collection");
+      }
+    } catch (error) {
+      console.error("Error fetching exercises:", error);
+      throw error;
+    }
+  }
+
+export async function ggetNextExercise(num: number): Promise<Exercise> {
   try {
     const querySnapshot = await getDocs(collection(db, "exercises"));
     
@@ -32,12 +59,90 @@ export async function getNextExercise(num: number): Promise<Exercise> {
   }
 }
 
-export function saveRecordedLift(blocks: { [id: number]: number }): void {
-    JSON.stringify(blocks);
+export function saveRecordedLift(
+                                blocks: { [id: number]: number }, 
+                                weight: number,
+                                exerciseIndex: number
+                              ): void {
+    let addedReps = 0;
+    let noOfReps = 0;
+
+    for (const [id, value] of Object.entries(blocks)) {
+      noOfReps++;
+      addedReps += value;
+    }
+    const avgReps = addedReps / noOfReps;
+
+    const historicType: { [key: string]: number } = {
+      avgSet: avgReps,
+      weightH: weight,
+    };
+
+    const historicData = JSON.stringify(historicType);
+    
+    ppush(historicType, 0);
+    // convert to historic type
+    // push newH to historic
+    // push / overwrite new data to sets
+
+    console.log('Compiled JSON data:', historicData);
+    
 }
 
 
-const importDataToFirestore = async () => {
+const ppush = async (
+  historicT: { [key: string]: number },
+  exerciseIndex: number
+) => {
+  try {
+    const exerciseDocRef = doc(db, "exercises", "push");
+
+    const docSnap = await getDoc(exerciseDocRef);
+    if (!docSnap.exists()) {
+      throw new Error("Document 'push' not found in the 'exercises' collection");
+    }
+    
+    const data = docSnap.data();
+    const exercises = data.exercise as any[];
+    
+    if (!exercises || exerciseIndex < 0 || exerciseIndex >= exercises.length) {
+      throw new Error(`Exercise not found at index ${exerciseIndex}`);
+    }
+    
+    const updatedExercises = [...exercises];
+    
+    if (!updatedExercises[exerciseIndex].historic) {
+      updatedExercises[exerciseIndex].historic = [];
+    }
+    
+    updatedExercises[exerciseIndex].historic.push(historicT);
+    
+    await updateDoc(exerciseDocRef, { exercise: updatedExercises });
+    
+    console.log("Document updated successfully");
+  } catch (error) {
+    console.error("Error pushing data: ", error);
+  }
+};
+
+
+
+const pppush = async (
+          historicT:{ [key: string]: number },
+          exerciseIndex: number
+) => {
+  try {
+    const exerciseDocRef = doc(db, "exercises", "push");
+    await updateDoc(exerciseDocRef, {
+      historic: arrayUnion(historicT) 
+    });
+    console.log("Document updated successfully");
+  } catch (error){
+    console.error("Error pushing data: ", error);
+  }
+}
+
+const oldImportDataToFirestore = async () => {
   try {
     for (const exercise of workoutData.push) {
       await addDoc(collection(db, "exercises"), exercise);
@@ -49,67 +154,33 @@ const importDataToFirestore = async () => {
   }
 };
 
+const fireStoreTest = {
+  "name": "Overhead Press",
+  "weight": 95,
+  "sets": 4,
+  "historic": []
+}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* 
-
-const filePath = path.join(__dirname, "workoutData.json");
-
-// Function to update an exercise name
-const updateExerciseName = (oldName: string, newName: string): void => {
+export async function importToFirestore(schedule: string, newExercise: Exercise): Promise<void> {
   try {
-    // Read the JSON file
-    const fileData = fs.readFileSync(filePath, "utf-8");
-    const workoutData = JSON.parse(fileData);
+    const exerciseDocRef = doc(db, "exercises", schedule);
 
-    // Find the exercise
-    const exercise = workoutData.exercises.find((ex: any) => ex.name === oldName);
-    if (!exercise) {
-      console.log(`Exercise "${oldName}" not found.`);
-      return;
+    const docSnap = await getDoc(exerciseDocRef);
+    if (!docSnap.exists()) {
+      throw new Error("Document '" + schedule + "' not found in the 'exercises' collection");
     }
 
-    // Update the name
-    exercise.name = newName;
+    const data = docSnap.data();
+    const exercises = (data.exercise as Exercise[]) || [];
 
-    // Write the updated object back to the JSON file
-    fs.writeFileSync(filePath, JSON.stringify(workoutData, null, 2), "utf-8");
-    console.log(`Updated exercise name from "${oldName}" to "${newName}".`);
+    const updatedExercises = [...exercises, newExercise];
+
+    await updateDoc(exerciseDocRef, { exercise: updatedExercises });
+    console.log("Exercise added successfully");
   } catch (error) {
-    console.error("Error updating exercise name:", error);
+    console.error("Error adding exercise:", error);
+    throw error;
   }
-}; */
+}

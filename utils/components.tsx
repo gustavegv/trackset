@@ -2,7 +2,7 @@
  * Components for SetBlocks and ConfirmSelection
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -28,7 +28,15 @@ export const SetBlock = ({
     repNum: number;
     onCountChange: (id: number, count: number) => void;
 }) => {
-  const [curCount, setCurCount] = useState(repNum);
+    
+    const [curCount, setCurCount] = useState(repNum);
+    
+
+    useEffect(() => {
+        onCountChange(id, repNum);
+        setCurCount(repNum);
+        console.log("SB" + id + " created with " + repNum);
+  }, [repNum]);
 
   const handleDecrement = () => {
     const newCount = curCount - 1;
@@ -45,7 +53,7 @@ export const SetBlock = ({
 
   return (
     <View style={styles.counterContainer}>
-        <Text style={styles.red}>Set {id}</Text>
+        <Text>Set {id}</Text>
         <View style={styles.counterInnerContainer}>
           <Incrementers text={"-"} onPress={handleDecrement}></Incrementers>
           <Text style={styles.counter}>{curCount}</Text>

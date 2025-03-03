@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Button } from 'react-native';
 import { SetBlock, ConfirmSelection } from './utils/components';
-import { getNextExercise } from './utils/firebaseDataHandler';
+import { getNextExercise, saveRecordedLift } from './utils/firebaseDataHandler';
 
 function App(): React.ReactElement {
   const [exerciseData, setExerciseData] = useState<
-    { id: number; reps: number; weight?: number }[]
+    { id: number; reps: number;}[]
   >([]);
   const [exName, setExName] = useState("");
+  const [exWeight, setExWeight] = useState(0);
+
+
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -24,9 +28,10 @@ function App(): React.ReactElement {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getNextExercise(0); 
+        const data = await getNextExercise(currentExerciseIndex); 
         setExerciseData(data.sets);
         setExName(data.name);
+        setExWeight(data.weight);
       } catch (err: any) {
         setError(err);
       } finally {
@@ -35,7 +40,7 @@ function App(): React.ReactElement {
     };
 
     fetchData();
-  }, []);
+  }, [currentExerciseIndex]);
 
   if (loading) {
     return (
@@ -62,15 +67,23 @@ function App(): React.ReactElement {
     />
   ));
 
+  const loadNextExercise = () => {
+    setCurrentExerciseIndex(prevIndex => prevIndex + 1);
+    console.log("Loading next exercise...")
+  };
+  
+
   const handleSubmit = () => {
-    const jsonData = JSON.stringify(blockStates);
-    console.log('Compiled JSON data:', jsonData);
+    saveRecordedLift(blockStates, exWeight, currentExerciseIndex);
+    loadNextExercise();
   };
 
   return (
     <View style={styles.container}>
       <View>
-        <Text style={styles.bigBlue}>{exName}</Text>
+        <Text style={[styles.bigFont, styles.red]}>{exName}</Text>
+        <Text style={styles.bigFont}>{exWeight}kg</Text>
+
       </View>
       <View>{setBlockComponents}</View>
       <ConfirmSelection onPress={handleSubmit} />
@@ -86,8 +99,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#fff',
   },
-  bigBlue: {
-    color: 'blue',
+  bigFont: {
     fontWeight: 'bold',
     fontSize: 30,
     marginBottom: 20,
