@@ -1,6 +1,6 @@
 import workoutData from "./data.json";
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDocs, updateDoc, arrayUnion, doc, orderBy, query, getDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, arrayUnion, doc, orderBy, query, getDoc, setDoc } from "firebase/firestore";
 
 interface Exercise {
   name: string;
@@ -42,21 +42,11 @@ interface Set {
     }
   }
 
-export async function ggetNextExercise(num: number): Promise<Exercise> {
-  try {
-    const querySnapshot = await getDocs(collection(db, "exercises"));
-    
-    const exercises = querySnapshot.docs.map(doc => doc.data() as Exercise);
-
-    if (exercises[num]) {
-      return exercises[num];
-    } else {
-      throw new Error(`Exercise not found for index ${num}`);
-    }
-  } catch (error) {
-    console.error("Error fetching exercises:", error);
-    throw error;
-  }
+function transformBlocksToSets(blocks: { [id: number]: number }): Set[] {
+  return Object.entries(blocks).map(([id, reps]) => ({
+    id: Number(id),
+    reps: reps,
+  }));
 }
 
 export function saveRecordedLift(
@@ -80,107 +70,166 @@ export function saveRecordedLift(
 
     const historicData = JSON.stringify(historicType);
     
-    ppush(historicType, 0);
-    // convert to historic type
-    // push newH to historic
-    // push / overwrite new data to sets
+
+    pushHistoricData("bench", historicType);
+
+    const newSets = transformBlocksToSets(blocks);
+    updateExerciseSets("bench", newSets);
 
     console.log('Compiled JSON data:', historicData);
     
 }
 
-
-const ppush = async (
-  historicT: { [key: string]: number },
-  exerciseIndex: number
+const pushHistoricData = async (
+  exerciseDocId: string,
+  historicT: { [key: string]: number }
 ) => {
   try {
-    const exerciseDocRef = doc(db, "exercises", "push");
-
-    const docSnap = await getDoc(exerciseDocRef);
-    if (!docSnap.exists()) {
-      throw new Error("Document 'push' not found in the 'exercises' collection");
-    }
+    const exerciseDocRef = doc(db, "push-day", exerciseDocId);
     
-    const data = docSnap.data();
-    const exercises = data.exercise as any[];
+    await updateDoc(exerciseDocRef, {
+      historic: arrayUnion(historicT)
+    });
     
-    if (!exercises || exerciseIndex < 0 || exerciseIndex >= exercises.length) {
-      throw new Error(`Exercise not found at index ${exerciseIndex}`);
-    }
-    
-    const updatedExercises = [...exercises];
-    
-    if (!updatedExercises[exerciseIndex].historic) {
-      updatedExercises[exerciseIndex].historic = [];
-    }
-    
-    updatedExercises[exerciseIndex].historic.push(historicT);
-    
-    await updateDoc(exerciseDocRef, { exercise: updatedExercises });
-    
-    console.log("Document updated successfully");
+    console.log("Historic data pushed successfully");
   } catch (error) {
     console.error("Error pushing data: ", error);
   }
 };
 
 
-
-const pppush = async (
-          historicT:{ [key: string]: number },
-          exerciseIndex: number
-) => {
+export async function updateExerciseSets(
+  exerciseDocId: string,
+  newSets: Set[]
+): Promise<void> {
   try {
-    const exerciseDocRef = doc(db, "exercises", "push");
-    await updateDoc(exerciseDocRef, {
-      historic: arrayUnion(historicT) 
-    });
-    console.log("Document updated successfully");
-  } catch (error){
-    console.error("Error pushing data: ", error);
+    const exerciseDocRef = doc(db, "push-day", exerciseDocId);
+    
+    // Directly update the "sets" field, overwriting the previous value.
+    await updateDoc(exerciseDocRef, { sets: newSets });
+    
+    console.log("Sets updated successfully");
+  } catch (error) {
+    console.error("Error updating sets:", error);
   }
 }
 
-const oldImportDataToFirestore = async () => {
+
+
+
+async function importToFirestore(schedule: string, newExercise: Exercise): Promise<void> {
   try {
-    for (const exercise of workoutData.push) {
-      await addDoc(collection(db, "exercises"), exercise);
-      console.log(`Added: ${exercise.name}`);
+    const exerciseDocRef = doc(db, "exercises", schedule);
+    
+    const docSnap = await getDoc(exerciseDocRef);
+    if (!docSnap.exists()) {
+      throw new Error("Document '" + schedule + "' not found in the 'exercises' collection");
     }
-    console.log("All data imported successfully!");
+    
+    const data = docSnap.data();
+    const exercises = (data.exercise as Exercise[]) || [];
+    
+    const updatedExercises = [...exercises, newExercise];
+    
+    await updateDoc(exerciseDocRef, { exercise: updatedExercises });
+    console.log("IMPORTED NEW MOVEMENT TO " + schedule + "-day. Exercise added successfully");
   } catch (error) {
-    console.error("Error importing data:", error);
+    console.error("Error adding exercise:", error);
+    throw error;
   }
-};
+}
+
+
+
 
 const fireStoreTest = {
   "name": "Overhead Press",
   "weight": 95,
-  "sets": 4,
+  "sets": [
+    {
+      "id": 1,
+      "reps": 10,
+    },
+    {
+      "id": 2,
+      "reps": 10,
+    },
+  ],
   "historic": []
 }
 
 
 
-export async function importToFirestore(schedule: string, newExercise: Exercise): Promise<void> {
-  try {
-    const exerciseDocRef = doc(db, "exercises", schedule);
-
-    const docSnap = await getDoc(exerciseDocRef);
-    if (!docSnap.exists()) {
-      throw new Error("Document '" + schedule + "' not found in the 'exercises' collection");
+const currentLayout = {
+  "exercises": {
+    "push": {
+      "exercise": [
+        {
+          "name": "Overhead Press",
+          "weight": 95,
+          "sets": 4,
+          "historic": []
+        },
+        {
+          "name": "Bench Press",
+          "weight": 135,
+          "sets": 3,
+          "historic": []
+        }
+      ]
     }
+  }
+}
 
-    const data = docSnap.data();
-    const exercises = (data.exercise as Exercise[]) || [];
+const newOldLayout = {
+  "push-day": {
+    "bench": 
+        {
+          "name": "Bench Press",
+          "weight": 95,
+          "sets": [
+              {
+                "id": 1,
+                "reps": 10,
+              },
+              {
+                "id": 2,
+                "reps": 10,
+              },
+              {
+                "id": 3,
+                "reps": 10,
+              },
+            ],
+          "historic": []
+        }
+  }
+}
 
-    const updatedExercises = [...exercises, newExercise];
 
-    await updateDoc(exerciseDocRef, { exercise: updatedExercises });
-    console.log("Exercise added successfully");
-  } catch (error) {
-    console.error("Error adding exercise:", error);
-    throw error;
+const newLayout: Record<string, Record<string, any>> = {
+  "push-day": {
+    "bench": {
+      "name": "Bench Press",
+      "weight": 95,
+      "sets": [
+        { "id": 1, "reps": 10 },
+        { "id": 2, "reps": 10 },
+        { "id": 3, "reps": 10 }
+      ],
+      "historic": []
+    }
+  }
+};
+
+export async function importNewLayout(): Promise<void> {
+  // Iterate over each collection in newLayout
+  for (const [collectionName, collectionData] of Object.entries(newLayout)) {
+    // Iterate over each document in the collection
+    for (const [docId, docData] of Object.entries(collectionData)) {
+      const docRef = doc(db, collectionName, docId);
+      await setDoc(docRef, docData);
+      console.log(`Imported document "${docId}" into collection "${collectionName}"`);
+    }
   }
 }
