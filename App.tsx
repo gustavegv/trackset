@@ -10,6 +10,8 @@ function App(): React.ReactElement {
   >([]);
   const [exName, setExName] = useState(""); // loaded exercise name
   const [exWeight, setExWeight] = useState(0); // loaded exercise weight
+  const [exTag, setExTag] = useState(""); // loaded exercise tag
+
 
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0); // index
  
@@ -39,6 +41,7 @@ useEffect(() => {
         setExerciseData(current.sets);
         setExName(current.name);
         setExWeight(current.weight);
+        setExTag(current.tag);
       }
     } catch (err: any) {
       setError(err);
@@ -102,12 +105,12 @@ useEffect(() => {
   const flashLoadingScreen = () => {
     Animated.sequence([
       Animated.timing(overlayOpacity, {
-        toValue: 0.9, // Darken screen
-        duration: 100, // Fast flash
+        toValue: 0.9, 
+        duration: 100, 
         useNativeDriver: true,
       }),
       Animated.timing(overlayOpacity, {
-        toValue: 0, // Restore to normal
+        toValue: 0, 
         duration: 500,
         useNativeDriver: true,
       }),
@@ -115,7 +118,7 @@ useEffect(() => {
   };
 
   const handleSubmit = () => {
-    saveRecordedLift(blockStates, exWeight, currentExerciseIndex);
+    saveRecordedLift(blockStates, exWeight, exTag);
     flashLoadingScreen();
     setTimeout(() => {
       loadNextExercise();
@@ -154,7 +157,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   statusBar: {
-    width: '100%', // Full width
+    width: '100%', 
   },
   bigFont: {
     fontWeight: 'bold',

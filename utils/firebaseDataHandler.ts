@@ -8,6 +8,7 @@ export interface Exercise {
   weight: number;
   historic: Historic[];
   order?: number;
+  tag: string;
 }
 
 interface Historic {
@@ -41,7 +42,7 @@ function transformBlocksToSets(blocks: { [id: number]: number }): Set[] {
 export function saveRecordedLift(
                                 blocks: { [id: number]: number }, 
                                 weight: number,
-                                exerciseIndex: number
+                                exName: string
                               ): void {
     let addedReps = 0;
     let noOfReps = 0;
@@ -59,10 +60,10 @@ export function saveRecordedLift(
 
     const historicData = JSON.stringify(historicType);
 
-    pushHistoricData("bench", historicType);
+    pushHistoricData(exName, historicType);
 
     const newSets = transformBlocksToSets(blocks);
-    pushNewSetToDB("bench", newSets);
+    pushNewSetToDB(exName, newSets);
 
     console.log('Compiled JSON data:', historicData);
 }
@@ -192,7 +193,8 @@ const shoulderPress: Exercise = {
     { id: 3, reps: 8 }
   ],
   historic: [],
-  order: 1 
+  order: 1,
+  tag: "shoulder-press"
 };
 
 async function importNewLayout(): Promise<void> {
