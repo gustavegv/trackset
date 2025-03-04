@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import useTheme from './theme/useTheme';
 
+const theme = useTheme();
 
 const Incrementers = ({ text, onPress }: {text: string; onPress: () => void}) => {
   return (
@@ -53,12 +55,14 @@ export const SetBlock = ({
 
   return (
     <View style={styles.counterContainer}>
-        <Text>Set {id}</Text>
-        <View style={styles.counterInnerContainer}>
+        <Text style={styles.setText}>Set {id}</Text>
+
+        <View style={[styles.counterInnerContainer, styles.shadowBox]}>
           <Incrementers text={"-"} onPress={handleDecrement}></Incrementers>
           <Text style={styles.counter}>{curCount}</Text>
           <Incrementers text={"+"} onPress={handleIncrement}></Incrementers>
         </View>
+
       </View>
   );
 }
@@ -82,10 +86,6 @@ const styles = StyleSheet.create({
     alignContent: "space-evenly",
     justifyContent: "space-between",
   },
-
-  red: {
-    color: 'red',
-  },
   counterContainer: {
     display: "flex",
     flexDirection: "column",
@@ -95,33 +95,55 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: theme.colors.primary,
+    margin: 6,
+    padding: 10,
+    paddingHorizontal: 60,
+    borderRadius: theme.borderRad,
   },
   setIncrement: {
-    backgroundColor: 'blue',
-    color: "white",
+    backgroundColor: theme.colors.primary,
+    color: theme.colors.text,
     textAlign: "center",
     paddingVertical: 16,
     width: 50,
     marginHorizontal: 10,
+    borderRadius: 50,
+    borderColor: theme.colors.secondary,
   },
   counter: {
-    backgroundColor: "red",
+    backgroundColor: theme.colors.primary,
     width: 100,
     paddingVertical: 22,
     textAlign: "center",
-    color: "white",
+    color: theme.colors.text,
     fontSize: 46,
   },
   confirm: {
     width: "50%",
-    backgroundColor: "green",
-    color: "white",
+    backgroundColor: theme.colors.secondary,
+    color: theme.colors.text,
     textAlign: "center",
     paddingVertical: 20,
   },
   confirmBox: {
     width: '100%',
-    alignItems: 'center'
-  }
+    alignItems: 'center',
+    margin: 30
+  },
+  setText: {
+    color: theme.colors.text
+  },
+  shadowBox: {
+    
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,  // Controls vertical shadow
+    },
+    shadowOpacity: 0.2, // Adjust for transparency
+    shadowRadius: 6, // Soften edges
+
+  },
 
 });
