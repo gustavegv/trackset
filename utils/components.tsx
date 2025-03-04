@@ -125,11 +125,13 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     textAlign: "center",
     paddingVertical: 20,
+    borderRadius: theme.borderRad
   },
   confirmBox: {
     width: '100%',
     alignItems: 'center',
-    margin: 30
+    margin: 30,
+    
   },
   setText: {
     color: theme.colors.text

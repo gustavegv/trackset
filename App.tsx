@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { StyleSheet, Text, View, Button, StatusBar, SafeAreaView, Animated } from 'react-native';
 import { SetBlock, ConfirmSelection } from './utils/components';
 import { Exercise, getOrderedExercises, saveRecordedLift } from './utils/firebaseDataHandler';
 import useTheme from './utils/theme/useTheme';
@@ -17,6 +17,8 @@ function App(): React.ReactElement {
   const [error, setError] = useState<Error | null>(null); // error
 
   const [blockStates, setBlockStates] = useState<{ [id: number]: number }>({}); // setblocks
+
+  const [overlayOpacity] = useState(new Animated.Value(0));
 
   const handleCountChange = (id: number, count: number) => {
     setBlockStates((prev) => ({
@@ -97,13 +99,38 @@ useEffect(() => {
   };
   
 
+  const flashLoadingScreen = () => {
+    Animated.sequence([
+      Animated.timing(overlayOpacity, {
+        toValue: 0.9, // Darken screen
+        duration: 100, // Fast flash
+        useNativeDriver: true,
+      }),
+      Animated.timing(overlayOpacity, {
+        toValue: 0, // Restore to normal
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const handleSubmit = () => {
     saveRecordedLift(blockStates, exWeight, currentExerciseIndex);
-    loadNextExercise();
+    flashLoadingScreen();
+    setTimeout(() => {
+      loadNextExercise();
+    }, 100);
   };
 
   return (
-    <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
+      <View style={[styles.statusBar, { backgroundColor: 'blue' }]} />
+
+    
+      <StatusBar backgroundColor="#000" barStyle="light-content" />
+    
+    
+
       <View>
         <Text style={[styles.bigFont]}>{exName}</Text>
         <Text style={[styles.bigFont, styles.white]}>{exWeight}kg</Text>
@@ -111,7 +138,8 @@ useEffect(() => {
       </View>
       <View>{setBlockComponents}</View>
       <ConfirmSelection onPress={handleSubmit} />
-    </View>
+      <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]} />
+    </SafeAreaView>
   );
 }
 
@@ -119,11 +147,14 @@ const theme = useTheme();
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: '15%',
+    marginTop: '0%',
     alignItems: 'center',
     flex: 1,
     padding: 20,
     backgroundColor: theme.colors.background,
+  },
+  statusBar: {
+    width: '100%', // Full width
   },
   bigFont: {
     fontWeight: 'bold',
@@ -136,6 +167,10 @@ const styles = StyleSheet.create({
   white: {
     color: theme.colors.text,
     fontSize: 20,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject, // Covers full screen
+    backgroundColor: 'black', // Darkens screen
   },
 });
 
